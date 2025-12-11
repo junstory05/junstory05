@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>시험 기간 진행률 계산기</title>
+  <style>
+    :root {
+      --main-color: #4a90e2;
+      --bg-color: #eef3ff;
+      --text-color: #222;
+    }
+
+    body {
+      font-family: 'Pretendard', sans-serif;
+      text-align: center;
+      background: var(--bg-color);
+      margin: 0;
+      padding: 20px;
+      color: var(--text-color);
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 15px;
+      font-weight: 600;
+    }
+
+    label {
+      display: block;
+      font-size: 0.95rem;
+      margin-top: 8px;
+    }
+
+    input {
+      width: 90%;
+      max-width: 400px;
+      font-size: 1rem;
+      margin: 5px 0 10px;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    button {
+      background: var(--main-color);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1rem;
+      border-radius: 10px;
+      margin: 5px;
+      cursor: pointer;
+    }
+
+    button:active {
+      opacity: 0.8;
+    }
+
+    #progressBar {
+      width: 90%;
+      max-width: 400px;
+      height: 30px;
+      background-color: #ddd;
+      border-radius: 20px;
+      margin: 20px auto;
+      overflow: hidden;
+    }
+
+    #progress {
+      height: 100%;
+      background-color: var(--main-color);
+      width: 0%;
+      transition: width 0.1s linear;
+    }
+
+    #output {
+      font-size: 1.3rem;
+      margin-top: 15px;
+      font-weight: 600;
+    }
+
+    #timeLeft {
+      font-size: 0.95rem;
+      margin-top: 10px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>📊 시험 기간 진행률 계산기</h1>
+
+  <label>시험 시작 시각</label>
+  <input type="datetime-local" id="start">
+
+  <label>시험 종료 시각</label>
+  <input type="datetime-local" id="end">
+
+  <div>
+    <button onclick="startTimer()">시작</button>
+    <button onclick="resetData()" style="background:#ff5b5b;">초기화</button>
+  </div>
+
+  <div id="progressBar"><div id="progress"></div></div>
+  <div id="output">진행률: 0%</div>
+  <div id="timeLeft"></div>
+
+  <script>
+    let timer;
+
+    // 🔹 페이지 로드 시 저장된 값 불러오기
+    window.onload = () => {
+      const savedStart = localStorage.getItem("examStart");
+      const savedEnd = localStorage.getItem("examEnd");
+
+      if (savedStart) document.getElementById("start").value = savedStart;
+      if (savedEnd) document.getElementById("end").value = savedEnd;
+
+      // 자동으로 타이머 시작 (둘 다 저장돼 있으면)
+      if (savedStart && savedEnd) startTimer();
+    };
+
+    function startTimer() {
+      if (timer) clearInterval(timer);
+
+      const startInput = document.getElementById("start");
+      const endInput = document.getElementById("end");
+
+      const start = new Date(startInput.value);
+      const end = new Date(endInput.value);
+
+      if (isNaN(start) || isNaN(end) || start >= end) {
+        alert("시작과 종료 시간을 올바르게 입력하세요.");
+        return;
+      }
+
+      // 🔹 입력값 저장
+      localStorage.setItem("examStart", startInput.value);
+      localStorage.setItem("examEnd", endInput.value);
+
+      timer = setInterval(() => {
+        const now = new Date();
+        const total = end - start;
+        const elapsed = now - start;
+        let percent = (elapsed / total) * 100;
+        percent = Math.min(Math.max(percent, 0), 100);
+
+        document.getElementById("output").textContent =
+          `진행률: ${percent.toFixed(8)}%`;
+
+        document.getElementById("progress").style.width = percent + "%";
+
+        const remainMs = Math.max(0, end - now);
+        const remainSec = Math.floor(remainMs / 1000);
+        const days = Math.floor(remainSec / 86400);
+        const hours = Math.floor((remainSec % 86400) / 3600);
+        const minutes = Math.floor((remainSec % 3600) / 60);
+        const seconds = (remainSec % 60);
+        const ms = Math.floor((remainMs % 1000) / 100);
+
+        document.getElementById("timeLeft").textContent =
+          `남은 시간: ${days}일 ${hours}시간 ${minutes}분 ${seconds}.${ms}초`;
+
+        if (percent >= 100) {
+          clearInterval(timer);
+          document.getElementById("output").textContent = "🎉 시험 종료!";
+          document.getElementById("progress").style.width = "100%";
+        }
+      }, 100); // 0.1초마다 갱신
+    }
+
+    // 🔹 데이터 초기화
+    function resetData() {
+      localStorage.removeItem("examStart");
+      localStorage.removeItem("examEnd");
+      document.getElementById("start").value = "";
+      document.getElementById("end").value = "";
+      document.getElementById("output").textContent = "진행률: 0%";
+      document.getElementById("progress").style.width = "0%";
+      document.getElementById("timeLeft").textContent = "";
+      if (timer) clearInterval(timer);
+    }
+  </script>
+</body>
+</html>
